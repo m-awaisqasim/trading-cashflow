@@ -71,12 +71,27 @@ const monthlyPnL = [
 ];
 
 // --- Helper ---
+const VALID_ISO_CURRENCIES = new Set([
+  'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD', 'CAD', 'CHF', 'HKD', 'SGD',
+]);
+
 const formatCurrency = (value: number, currency = 'USD') => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
+  // Intl.NumberFormat only accepts ISO 4217 currency codes.
+  // Crypto tickers like USDT are not valid — fall back to USD with a manual symbol.
+  if (VALID_ISO_CURRENCIES.has(currency)) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+    }).format(value);
+  }
+  // For non-ISO currencies (USDT, BTC, etc.), format as USD-like with symbol prefix
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
-  }).format(value);
+    maximumFractionDigits: 2,
+  }).format(Math.abs(value));
+  const sign = value < 0 ? '-' : '';
+  return `${sign}${currency} ${formatted}`;
 };
 
 // --- Components ---
@@ -139,11 +154,20 @@ function AccountRow({
   const Icon = account.icon;
   const isPositive = account.change >= 0;
 
+  const iconColorClass =
+    account.color === 'emerald'
+      ? 'text-emerald-400'
+      : account.color === 'red'
+      ? 'text-red-400'
+      : account.color === 'yellow'
+      ? 'text-yellow-400'
+      : 'text-zinc-300';
+
   return (
     <div className="flex items-center justify-between py-4 px-4 rounded-xl hover:bg-white/5 transition-all duration-200 group">
       <div className="flex items-center gap-4">
         <div className="p-3 rounded-xl bg-white/5 border border-white/10 group-hover:border-white/20 transition-all">
-          <Icon className="w-5 h-5 text-zinc-300" />
+          <Icon className={`w-5 h-5 ${iconColorClass}`} />
         </div>
         <div>
           <p className="text-white font-medium">{account.name}</p>
@@ -248,11 +272,20 @@ export default function App() {
       {/* Background Gradient Orbs */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Green orb - top left */}
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-emerald-500/8 blur-[120px]" />
+        <div
+          className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[120px]"
+          style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)' }}
+        />
         {/* Yellow orb - bottom right */}
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-yellow-500/6 blur-[120px]" />
+        <div
+          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full blur-[120px]"
+          style={{ backgroundColor: 'rgba(234, 179, 8, 0.08)' }}
+        />
         {/* Purple orb - center */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-500/4 blur-[150px]" />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[150px]"
+          style={{ backgroundColor: 'rgba(168, 85, 247, 0.06)' }}
+        />
       </div>
 
       {/* Main Content */}
